@@ -1,0 +1,14 @@
+version: '3'
+services:
+  redis:
+    build: redis/
+    ports:
+      - "6379"
+
+  page:
+    build: page/
+    ports:
+      - "80:9080"
+      - "443:9443"
+    volumes:
+      - /etc/letsencrypt:/certs

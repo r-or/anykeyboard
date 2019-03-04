@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="css/mah.css">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>anykeyboard</title>
+</head>
+
+<body>
+
+  <h1>anykeyboard</h1>
+
+  <textarea id="inp" rows=5 cols=10 autofocus></textarea>
+
+  <!-- main -->
+  <script>
+    const txtinput = document.getElementById('inp');
+    const url = "localhost:9080/client";
+
+    const socket = new WebSocket('ws://' + url);
+    socket.addEventListener('open', function (event) {
+      txtinput.addEventListener('keydown', function (keyevent) {
+        keyevent.preventDefault();
+        var ctrlChars = (keyevent.ctrlKey ? 'Ctrl|' : '')
+                        + (keyevent.shiftKey ? 'Shift|' : '')
+                        + (keyevent.altKey ? 'Alt|' : '');
+        if (!['Shift', 'Control', 'Alt'].includes(keyevent.key)) {
+          socket.send(ctrlChars + keyevent.key);
+        }
+        txtinput.value = keyevent.key;
+      });
+    });
+
+  </script>
+
+</body>
+</html>

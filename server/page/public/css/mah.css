@@ -1,0 +1,38 @@
+:root {
+  --main-bg-col: rgb(28, 38, 48);
+  --main-fnt-col: rgb(161, 184, 161);
+  --main-header-col: rgb(140, 204, 110);
+  --main-fnt: 'Lucida Console', monospace;
+  --main-href-col: rgb(189, 143, 75);
+}
+
+body {
+  font-family: var(--main-fnt);
+  font-size: 1.0em;
+  background-color: var(--main-bg-col);
+}
+h1 {
+  color: var(--main-header-col);
+  text-align: center;
+}
+h3 {
+  color: var(--main-header-col);
+}
+p, span {
+  color: var(--main-fnt-col);
+}
+a {
+  color: var(--main-href-col)
+}
+hr {
+  border: 1px solid var(--main-fnt-col);
+}
+textarea {
+  font-size: 1.0em;
+  border: 1px solid var(--main-fnt-col);
+  width: 100%;
+  background-color: var(--main-fnt-col);
+}
+* {
+  box-sizing: border-box;
+}
