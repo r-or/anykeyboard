@@ -22,7 +22,7 @@ class AnyKeyboardClient : InputMethodService() {
 
     private fun createWebSocket() {
         val request = Request.Builder()
-            .url("ws://192.168.0.69:9080/kb")
+            .url("ws://anykeyboard.com/kb")
             .addHeader("type", "keyboard")
             .build()
         val listener = WSclient()
