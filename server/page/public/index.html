@@ -16,7 +16,7 @@
   <!-- main -->
   <script>
     const txtinput = document.getElementById('inp');
-    const url = "localhost:9080/client";
+    const url = window.location.host + "/client";
 
     const socket = new WebSocket('ws://' + url);
     socket.addEventListener('open', function (event) {
