@@ -22,13 +22,22 @@
     socket.addEventListener('open', function (event) {
       txtinput.addEventListener('keydown', function (keyevent) {
         keyevent.preventDefault();
-        var ctrlChars = (keyevent.ctrlKey ? 'Ctrl|' : '')
-                        + (keyevent.shiftKey ? 'Shift|' : '')
-                        + (keyevent.altKey ? 'Alt|' : '');
-        if (!['Shift', 'Control', 'Alt'].includes(keyevent.key)) {
-          socket.send(ctrlChars + keyevent.key);
-        }
+        // var ctrlChars = (keyevent.ctrlKey ? 'Ctrl|' : '')
+        //                 + (keyevent.shiftKey ? 'Shift|' : '')
+        //                 + (keyevent.altKey ? 'Alt|' : '');
+        // if (!['Shift', 'Control', 'Alt'].includes(keyevent.key)) {
+        //var tosend = ctrlChars + keyevent.keyCode.toString();
+        var tosend = keyevent.key.length > 1 ? 'D|' + keyevent.key : keyevent.key;
+        socket.send(tosend);
+        // }
         txtinput.value = keyevent.key;
+      });
+      txtinput.addEventListener('keyup', function (keyevent) {
+        keyevent.preventDefault();
+        var tosend = 'U|' + keyevent.key;
+        if (keyevent.key.length > 1) {
+          socket.send(tosend);
+        }
       });
     });
 
