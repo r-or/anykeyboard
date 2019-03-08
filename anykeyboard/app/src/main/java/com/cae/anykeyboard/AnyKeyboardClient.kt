@@ -20,6 +20,7 @@ class AnyKeyboardClient : InputMethodService() {
     private val keymap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD)
     private var url = "192.168.0.69:9080"
     private var uid: String? = null
+    private var secret = 999
 
     override fun onCreateInputView(): View {
         val keyboardView = layoutInflater.inflate(R.layout.keyboard_view, null) as KeyboardView
@@ -32,7 +33,6 @@ class AnyKeyboardClient : InputMethodService() {
 
 
     private fun getUID() {
-        var secret = 999
         var requestBody = FormBody.Builder()
             .add("secret", secret.toString())
             .build()
@@ -149,8 +149,6 @@ class AnyKeyboardClient : InputMethodService() {
             Log.e("anykeyboard", "Error trying to handle input", e)
         }
     }
-
-    private var secret = 0
 
     private fun askSecret() {
         val builder = AlertDialog.Builder(this.applicationContext)
