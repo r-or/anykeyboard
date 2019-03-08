@@ -29,10 +29,50 @@ hr {
 }
 textarea {
   font-size: 1.0em;
+  color: var(--main-bg-col);
   border: 1px solid var(--main-fnt-col);
   width: 100%;
   background-color: var(--main-fnt-col);
 }
 * {
   box-sizing: border-box;
+}
+
+.button-grp .button {
+  font-family: var(--main-fnt);
+  background-color: var(--main-fnt-col);
+  color: var(--main-bg-col);
+  border: 1px solid var(--main-fnt-col);
+  padding: 10px 15px;
+  text-align: center;
+  cursor: pointer;
+  margin: 1px;
+}
+.button-grp .buttonN {
+  font-family: var(--main-fnt);
+  background-color: var(--main-bg-col);
+  color: var(--main-fnt-col);
+  border: 1px solid var(--main-fnt-col);
+  padding: 10px 15px;
+  text-align: center;
+  cursor: pointer;
+  margin: 1px;
+}
+
+.left10 {
+  float: left;
+  /* width: 10%; */
+  padding: 0px 10px;
+}
+.right90 {
+  float: left;
+  width: 90%;
+  padding: 0px 10px;
+}
+
+@media screen and (max-width: 1000px),
+       screen and (orientation: portrait) {
+  .left10, .right90 {
+    width: 100%;
+  }
 }

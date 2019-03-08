@@ -11,27 +11,104 @@
 
   <h1>anykeyboard</h1>
 
+  <hr>
+  <h3>Options</h3>
+  <div class="left10" style="padding: 10px 10px">
+      <span><b>Protocol:</b></span>
+  </div>
+  <div class="right90">
+    <div class="button-grp">
+      <button id="websocketornot" class="button">websocket</button>
+    </div>
+  </div>
+  <br style="clear:both">
+  <hr>
+
   <textarea id="inp" rows=5 cols=10 autofocus></textarea>
 
   <!-- main -->
   <script>
-    const txtinput = document.getElementById('inp');
-    const url = window.location.host + "/client";
+    fetch('/user/id')
+    .then(() => {
+      const url = window.location.host + "/client";
 
-    const socket = new WebSocket('ws://' + url);
-    socket.addEventListener('open', function (event) {
+      var websocketBtn = document.getElementById('websocketornot');
+      websocketBtn.usewebsocket = true;
+      websocketBtn.onclick = (e) => {
+        if (websocketBtn.className == "button") {
+          // switch to REST
+          websocketBtn.className = "buttonN";
+          websocketBtn.usewebsocket = false;
+          websocketBtn.innerText = "REST";
+        } else {
+          // switch to websocket
+          websocketBtn.className = "button";
+          websocketBtn.usewebsocket = true;
+          websocketBtn.innerText = "websocket";
+        }
+      }
+
+      const socket = new WebSocket('ws://' + url);
+      socket.addEventListener('open', function (event) {
+        // send secret
+        socket.send('YO!');
+      });
+      socket.addEventListener('error', function (event) {
+        console.log(event)
+      });
+
+      const txtinput = document.getElementById('inp');
       txtinput.addEventListener('keydown', function (keyevent) {
         keyevent.preventDefault();
-        var ctrlChars = (keyevent.ctrlKey ? 'Ctrl|' : '')
-                        + (keyevent.shiftKey ? 'Shift|' : '')
-                        + (keyevent.altKey ? 'Alt|' : '');
-        if (!['Shift', 'Control', 'Alt'].includes(keyevent.key)) {
-          socket.send(ctrlChars + keyevent.key);
+        var tosend = keyevent.key.length > 1 ? 'D|' + keyevent.key : keyevent.key;
+        console.log('sending "' + tosend + '"')
+        if (websocketBtn.usewebsocket) {
+          socket.send(tosend);
+        } else {
+          postData('/rclient', {key: tosend})
+            .catch(err => console.error(err));
         }
         txtinput.value = keyevent.key;
       });
-    });
+      txtinput.addEventListener('keyup', function (keyevent) {
+        keyevent.preventDefault();
+        if (keyevent.key.length > 1) {
+          var tosend = 'U|' + keyevent.key;
+          console.log('sending "' + tosend + '"')
+          console.log(socket);
+          if (websocketBtn.usewebsocket) {
+            socket.send(tosend);
+          } else {
+            postData('/rclient', {key: tosend})
+              .catch(err => console.error(err));
+          }
+        }
+      });
+    })
+  .catch(error => console.log(error))
 
+
+  </script>
+
+  <!-- post -->
+  <script>
+    function postData(url='', data={}) {
+      // Default options are marked with *
+      return fetch(url, {
+        method: "POST", // *GET, POST, PUT, DELETE, etc.
+        mode: "cors", // no-cors, cors, *same-origin
+        cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: "same-origin", // include, *same-origin, omit
+        headers: {
+            "Content-Type": "application/json",
+            // "Content-Type": "application/x-www-form-urlencoded",
+        },
+        redirect: "follow", // manual, *follow, error
+        referrer: "no-referrer", // no-referrer, *client
+        body: JSON.stringify(data), // body data type must match "Content-Type" header
+      })
+    .then(response => response.json()); // parses response to JSON
+  }
   </script>
 
 </body>
