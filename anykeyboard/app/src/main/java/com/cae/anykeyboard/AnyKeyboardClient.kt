@@ -4,6 +4,7 @@ import android.content.*
 import android.inputmethodservice.InputMethodService
 import android.inputmethodservice.Keyboard
 import android.inputmethodservice.KeyboardView
+import android.os.Handler
 import android.support.v4.content.LocalBroadcastManager
 import android.util.Log
 import android.view.*
@@ -11,11 +12,14 @@ import okhttp3.*
 import java.io.IOException
 import java.lang.Exception
 
-class AnyKeyboardClient : InputMethodService() {
+class WrongUidException : Exception()
+
+class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
     companion object {
         public val GIVE_SECRET = "GIVE_SECRET"
         public val ASK_SECRET = "GIVE_ME_THE_SECRET"
+        public val SECRET_LENGTH = 3
     }
 
     private val client = OkHttpClient()
@@ -34,16 +38,11 @@ class AnyKeyboardClient : InputMethodService() {
         }
     }
 
-    override fun onCreateInputView(): View {
-        val keyboardView = layoutInflater.inflate(R.layout.keyboard_view, null) as KeyboardView
-        val keyboard = Keyboard(this, R.xml.keyboard_layout)
-        keyboardView.keyboard = keyboard
-        localBroadcast = LocalBroadcastManager.getInstance(this)
-        localBroadcast?.registerReceiver(listener, IntentFilter(GIVE_SECRET))
-        localBroadcast?.sendBroadcast(Intent(ASK_SECRET))
+    private var handler: Handler? = null
 
-        Log.d("createinputview", "bc: $localBroadcast")
-        return keyboardView
+    override fun onCreateInputView(): View {
+        handler = Handler()
+        return getSecretKeyboard()
     }
 
     override fun onDestroy() {
@@ -51,6 +50,57 @@ class AnyKeyboardClient : InputMethodService() {
         localBroadcast?.unregisterReceiver(listener)
     }
 
+    private var secret = ""
+
+    private fun getSecretKeyboard() : KeyboardView {
+        secret = ""
+        val keyboardSecretView = layoutInflater.inflate(R.layout.keyboard_view_secret,
+            null) as KeyboardView
+        val keyboard = Keyboard(this, R.xml.keyboard_layout_secret)
+        keyboardSecretView.keyboard = keyboard
+        keyboardSecretView.setOnKeyboardActionListener(this)
+        return keyboardSecretView
+    }
+
+    private fun getEmptyKeyboard() : KeyboardView {
+        val keyboardView = layoutInflater.inflate(R.layout.keyboard_view, null) as KeyboardView
+        val keyboard = Keyboard(this, R.xml.keyboard_layout)
+        keyboardView.keyboard = keyboard
+        return keyboardView
+    }
+
+    override fun onKey(primaryCode: Int, keyCodes: IntArray?) {
+        if (currentInputConnection == null)
+            return
+
+        val code = primaryCode.toChar()
+        secret += code
+        if (secret.length == SECRET_LENGTH) {
+            getUID(secret)
+            // load empty keyboard
+            setInputView(getEmptyKeyboard())
+        }
+    }
+
+    override fun onPress(primaryCode: Int) {}
+
+    override fun onRelease(primaryCode: Int) {}
+
+    override fun onText(text: CharSequence) {}
+
+    override fun swipeLeft() {}
+
+    override fun swipeRight() {}
+
+    override fun swipeDown() {}
+
+    override fun swipeUp() {}
+
+
+
+    private fun runOnMainThread(runnable: Runnable) {
+        handler?.post(runnable)
+    }
 
     private fun getUID(secret: String) {
         var requestBody = FormBody.Builder()
@@ -67,13 +117,24 @@ class AnyKeyboardClient : InputMethodService() {
                     override fun onFailure(call: Call, e: IOException) {
                         Log.e("createWebSocket", "Failed request")
                     }
+
                     override fun onResponse(call: Call, response: Response) {
                         uid = response.body()?.string()
-                        Log.i("createWebSocket", "Got: '$uid'")
-                        createWebSocket()
+                        if (uid == null || uid?.length == 0) {
+                            Log.e("getUID", "Got: '$uid'")
+                            Log.e("getUID", "Failed to get UID, wrong secret?")
+                            runOnMainThread(object: Runnable {
+                                override fun run() {
+                                    setInputView(getSecretKeyboard())
+                                }
+                            })
+                        } else {
+                            Log.i("getUID", "Retrieved UID: $uid")
+                            createWebSocket()
+                        }
                     }
                 })
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }

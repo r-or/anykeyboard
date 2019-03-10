@@ -181,9 +181,11 @@ app.post('/rclient', (req, res) => {
 
 app.post('/registerkb', (req, res) => {
   console.log('trying to register keyboard');
+  var secret = parseInt(req.body.secret)
   for (i = 0; i < danglingConnections.length; ++i) {
-    console.log(i, parseInt(req.body.secret), danglingConnections[i].secret);
-    if (parseInt(req.body.secret) === danglingConnections[i].secret) {
+    console.log(i, secret, danglingConnections[i].secret);
+    if (secret === danglingConnections[i].secret) {
+      console.log('sending UID...')
       res.send(danglingConnections[i].uid);
       return
     }
