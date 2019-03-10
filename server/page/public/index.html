@@ -75,7 +75,6 @@
         if (keyevent.key.length > 1) {
           var tosend = 'U|' + keyevent.key;
           console.log('sending "' + tosend + '"')
-          console.log(socket);
           if (websocketBtn.usewebsocket) {
             socket.send(tosend);
           } else {

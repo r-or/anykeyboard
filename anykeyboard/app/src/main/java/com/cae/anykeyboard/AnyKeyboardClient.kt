@@ -1,47 +1,66 @@
 package com.cae.anykeyboard
 
-import android.app.AlertDialog
-import android.content.DialogInterface
+import android.content.*
 import android.inputmethodservice.InputMethodService
 import android.inputmethodservice.Keyboard
 import android.inputmethodservice.KeyboardView
-import android.os.AsyncTask
+import android.support.v4.content.LocalBroadcastManager
 import android.util.Log
 import android.view.*
-import android.widget.EditText
 import okhttp3.*
 import java.io.IOException
 import java.lang.Exception
-import java.net.URL
 
 class AnyKeyboardClient : InputMethodService() {
+
+    companion object {
+        public val GIVE_SECRET = "GIVE_SECRET"
+        public val ASK_SECRET = "GIVE_ME_THE_SECRET"
+    }
 
     private val client = OkHttpClient()
     private val keymap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD)
     private var url = "192.168.0.69:9080"
     private var uid: String? = null
-    private var secret = 999
+
+    private var localBroadcast: LocalBroadcastManager? = null
+
+    private var listener = object: BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                GIVE_SECRET -> getUID(intent.getStringExtra("SECRET"))
+            }
+            Log.e("BroadCastReceiver", "got '$intent'")
+        }
+    }
 
     override fun onCreateInputView(): View {
         val keyboardView = layoutInflater.inflate(R.layout.keyboard_view, null) as KeyboardView
         val keyboard = Keyboard(this, R.xml.keyboard_layout)
         keyboardView.keyboard = keyboard
-        getUID()
+        localBroadcast = LocalBroadcastManager.getInstance(this)
+        localBroadcast?.registerReceiver(listener, IntentFilter(GIVE_SECRET))
+        localBroadcast?.sendBroadcast(Intent(ASK_SECRET))
 
+        Log.d("createinputview", "bc: $localBroadcast")
         return keyboardView
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        localBroadcast?.unregisterReceiver(listener)
+    }
 
-    private fun getUID() {
+
+    private fun getUID(secret: String) {
         var requestBody = FormBody.Builder()
-            .add("secret", secret.toString())
+            .add("secret", secret)
             .build()
         var request = Request.Builder()
             .url("http://$url/registerkb")
             .post(requestBody)
             .build()
 
-        // https://stackoverflow.com/questions/34967505/android-okhttp-asynchronous-calls
         try {
             client.newCall(request)
                 .enqueue(object : Callback {
@@ -148,27 +167,7 @@ class AnyKeyboardClient : InputMethodService() {
         } catch (e: Exception) {
             Log.e("anykeyboard", "Error trying to handle input", e)
         }
-    }
 
-    private fun askSecret() {
-        val builder = AlertDialog.Builder(this.applicationContext)
-        builder.setTitle("Verification")
-        val viewInflated = LayoutInflater.from(this.applicationContext)
-            .inflate(R.layout.secret_popup, this.window.findViewById(android.R.id.keyboardView), false)
-        var input = viewInflated.findViewById<EditText>(R.id.input)
-        builder.setView(viewInflated)
-        builder.setPositiveButton(android.R.string.ok, object : DialogInterface.OnClickListener {
-            override fun onClick(dialog: DialogInterface, which: Int) {
-                dialog.dismiss()
-                secret = input.text.toString().toInt()
-            }
-        })
-        builder.setNegativeButton(android.R.string.cancel, object : DialogInterface.OnClickListener {
-            override fun onClick(dialog: DialogInterface, which: Int) {
-                dialog.cancel()
-            }
-        })
-        builder.show()
     }
 
     private val normalClosingStatus = 1000
