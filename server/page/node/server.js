@@ -123,29 +123,36 @@ class ConnectionInfo {
     this.uid = uid;
     this.wsClient = client;
     this.wsKeyboard = keyboard;
-    this.secret = 999; // genSecret();
+    this.secret = genSecret();
     danglingConnections.push(this);
+    this.connected = false;
   }
   addMissingClient(client) {
     this.wsClient = client;
-    danglingConnections.splice(danglingConnections.indexOf(this))
+    danglingConnections.splice(danglingConnections.indexOf(this));
+    this.connected = true;
   }
   addMissingKeyboard(keyboard) {
     this.wsKeyboard = keyboard;
-    danglingConnections.splice(danglingConnections.indexOf(this))
+    danglingConnections.splice(danglingConnections.indexOf(this));
+    this.connected = true;
   }
 }
 
 /** CLIENT CONNECTION **/
+const statusStr = (status) => {
+  return JSON.stringify({'status': status})
+}
+
 app.ws('/client', (wsC, req) => {
   var uid = req.cookies.anykeyboardUsr
   console.log('ws connection to ' + uid + ' established');
   if (!(uid in connections)) {
     connections[uid] = new ConnectionInfo(uid, wsC, null);
-  } else {
-    connections[uid].addMissingClient(wsC);
+  } else if (!connections[uid].connected) {
+      connections[uid].addMissingClient(wsC);
   }
-  wsC.send(JSON.stringify({'secret': connections[uid].secret}));
+  wsC.send(statusStr('Your secret: ' + connections[uid].secret));
 
   wsC.on('message', (msg) => {
     console.log('client: got "' + msg + '"');
@@ -160,19 +167,20 @@ app.ws('/client', (wsC, req) => {
 
 //someone doesn't want to communicate with websockets
 app.post('/rclient', (req, res) => {
-  console.log('REST: got "' + req.body.key + '"');
+  console.log('client REST: got "' + req.body.key + '"');
   var uid = req.cookies.anykeyboardUsr;
-  var conninfo = undefined;
   if (!(uid in connections)) {
     connections[uid] = new ConnectionInfo(uid, null, null);
-  } else {
+  } else if (!connections[uid].connected) {
     connections[uid].addMissingClient(null);
   }
   if (connections[uid].wsKeyboard != null) {
     connections[uid].wsKeyboard.send(req.body.key);
+    res.end(statusStr("Status: connected"));
+    return
   }
 
-  res.end("{}");
+  res.end(statusStr('Your secret: ' + connections[uid].secret));
 });
 
 
@@ -180,7 +188,7 @@ app.post('/rclient', (req, res) => {
 // TODO: send POST request to get user ID (if secret is correct!)
 
 app.post('/registerkb', (req, res) => {
-  console.log('trying to register keyboard');
+  console.log('trying to register keyboard; conns:', danglingConnections.length);
   var secret = parseInt(req.body.secret)
   for (i = 0; i < danglingConnections.length; ++i) {
     console.log(i, secret, danglingConnections[i].secret);
@@ -199,12 +207,37 @@ app.ws('/kb', (wsK, req) => {
     // there is no user connected yet: close connection
     console.log('ws connection to keyboard denied');
     wsK.close();
-  } else {
+  } else if (!connections[uid].connected) {
     connections[uid].addMissingKeyboard(wsK);
     console.log('ws connection to keyboard established');
+    if (connections[uid].wsClient != null)
+      connections[uid].wsClient.send(statusStr('Status: connected'));
+
+    var gotPong = true;
+    pingpong = setInterval(() => {
+      if (!gotPong) {
+        console.log("keyboard: didn't get PONG! Terminating connection...");
+        clearInterval(pingpong);
+        wsK.close();
+        return;
+      }
+      gotPong = false;
+      wsK.send("PING");
+    }, 10000);
+
+    wsK.on('message'), (msg) => {
+      console.log('keyboard: got', msg);
+      if (msg == "PONG") {
+        gotPong = true;
+      }
+    }
 
     wsK.on('close', (conn) => {
       console.log('ws connection to keyboard terminated');
+      connections[uid].wsKeyboard = null;
+      connections[uid].connected = false;
+      if (connections[uid].wsClient != null)
+        connections[uid].wsClient.send(statusStr('Status: phone disconnected'));
     });
   }
 });

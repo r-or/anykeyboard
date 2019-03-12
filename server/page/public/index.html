@@ -19,11 +19,17 @@
   <div class="right90">
     <div class="button-grp">
       <button id="websocketornot" class="button">websocket</button>
+      <span><i>if the (faster) websocket connection doesn't work, you can switch to REST</i></span>
     </div>
   </div>
   <br style="clear:both">
   <hr>
 
+  <h3 id="secret">Your secret: [waiting for response...]</h3>
+  <p><i><u>Secret:</u> when you select "anykeyboard" as keyboard you will be asked to input this
+    number to match you up with your phone</i>
+  </p>
+  <p>Input here:</p>
   <textarea id="inp" rows=5 cols=10 autofocus></textarea>
 
   <!-- main -->
@@ -54,7 +60,15 @@
         socket.send('YO!');
       });
       socket.addEventListener('error', function (event) {
-        console.log(event)
+        console.log('Error:', event)
+      });
+      socket.addEventListener('message', function (event) {
+        data = JSON.parse(event.data)
+        console.log('websocket: got', data)
+        var secretPg = document.getElementById('secret');
+        if (data.status != undefined) {
+          secretPg.innerHTML = data.status
+        }
       });
 
       const txtinput = document.getElementById('inp');

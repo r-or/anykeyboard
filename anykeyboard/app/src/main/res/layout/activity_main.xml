@@ -7,13 +7,49 @@
         android:layout_height="match_parent"
         tools:context=".MainActivity">
 
-    <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Installed!"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent"/>
+    <TextView android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="Installed!"
+              android:id="@+id/appTextView"
+              app:layout_constraintLeft_toLeftOf="parent"
+              app:layout_constraintRight_toRightOf="parent"
+              app:layout_constraintTop_toTopOf="parent"
+              app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <TextView android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="Server"
+              android:id="@+id/appTextViewServer"
+              app:layout_constraintTop_toTopOf="@+id/appCompatSpinner"
+              app:layout_constraintBottom_toBottomOf="@+id/appCompatSpinner"
+              app:layout_constraintStart_toStartOf="parent" android:layout_marginStart="8dp"/>
+
+    <android.support.v7.widget.AppCompatSpinner android:layout_width="0dp"
+                                                android:layout_height="53dp"
+                                                android:id="@+id/appCompatSpinner"
+                                                app:layout_constraintTop_toBottomOf="@+id/appTextView"
+                                                android:layout_marginTop="64dp"
+                                                app:layout_constraintWidth_max="wrap"
+                                                app:layout_constraintWidth_percent="0.5"
+                                                app:layout_constraintStart_toEndOf="@+id/appTextViewServer"
+                                                android:layout_marginStart="8dp">
+    </android.support.v7.widget.AppCompatSpinner>
+    <Button
+            android:text="+"
+            android:layout_width="48dp"
+            android:layout_height="50dp"
+            android:id="@+id/button"
+            app:layout_constraintTop_toTopOf="@+id/appCompatSpinner"
+            app:layout_constraintBottom_toBottomOf="@+id/appCompatSpinner"
+            app:layout_constraintStart_toEndOf="@+id/appCompatSpinner" android:layout_marginStart="8dp"/>
+    <Button
+            style=""
+            android:text="-"
+            android:layout_width="48dp"
+            android:layout_height="50dp"
+            android:id="@+id/button2"
+            app:layout_constraintTop_toTopOf="@+id/appCompatSpinner"
+            app:layout_constraintBottom_toBottomOf="@+id/appCompatSpinner"
+            app:layout_constraintStart_toEndOf="@+id/button" android:layout_marginStart="8dp"/>
 
 </android.support.constraint.ConstraintLayout>
