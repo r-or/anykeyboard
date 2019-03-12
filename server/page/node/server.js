@@ -12,7 +12,9 @@ const crypto = require('crypto')
 
 const app = express();
 enableWs(app);
-const rclient = redis.createClient({host: 'localhost', port: 6379});
+console.log("app mode:", app.settings.env)
+const rclient = redis.createClient({host: app.settings.env == 'production' ? 'redis' : 'localhost',
+                                    port: 6379});
 rclient.on('connect', () => {
   console.log('Connected to redis!');
   rclient.set('request-counter', 0);
