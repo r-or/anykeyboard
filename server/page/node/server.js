@@ -129,15 +129,18 @@ class ConnectionInfo {
     danglingConnections.push(this);
     this.connected = false;
   }
-  addMissingClient(client) {
+  updateClient(client) {
     this.wsClient = client;
-    danglingConnections.splice(danglingConnections.indexOf(this));
-    this.connected = true;
   }
   addMissingKeyboard(keyboard) {
     this.wsKeyboard = keyboard;
     danglingConnections.splice(danglingConnections.indexOf(this));
     this.connected = true;
+  }
+  removeKeyboard() {
+    this.wsKeyboard = null;
+    this.connected = false;
+    danglingConnections.push(this);
   }
 }
 
@@ -152,18 +155,24 @@ app.ws('/client', (wsC, req) => {
   if (!(uid in connections)) {
     connections[uid] = new ConnectionInfo(uid, wsC, null);
   } else if (!connections[uid].connected) {
-      connections[uid].addMissingClient(wsC);
+      connections[uid].updateClient(wsC);
   }
   wsC.send(statusStr('Your secret: ' + connections[uid].secret));
 
   wsC.on('message', (msg) => {
     console.log('client: got "' + msg + '"');
     if (connections[uid].wsKeyboard != null) {
-      connections[uid].wsKeyboard.send(msg);
+      try {
+        connections[uid].wsKeyboard.send(msg);
+      } catch(err) {
+        console.error(err)
+      }
     }
   });
   wsC.on('close', (conn) => {
     console.log('ws connection to client terminated');
+    connections[uid].updateClient(null);
+    connections[uid].connected = false;
   })
 });
 
@@ -174,7 +183,8 @@ app.post('/rclient', (req, res) => {
   if (!(uid in connections)) {
     connections[uid] = new ConnectionInfo(uid, null, null);
   } else if (!connections[uid].connected) {
-    connections[uid].addMissingClient(null);
+    connections[uid].updateClient(null);
+    connections[uid].connected = true;
   }
   if (connections[uid].wsKeyboard != null) {
     connections[uid].wsKeyboard.send(req.body.key);
@@ -215,31 +225,35 @@ app.ws('/kb', (wsK, req) => {
     if (connections[uid].wsClient != null)
       connections[uid].wsClient.send(statusStr('Status: connected'));
 
-    var gotPong = true;
-    pingpong = setInterval(() => {
-      if (!gotPong) {
-        console.log("keyboard: didn't get PONG! Terminating connection...");
-        clearInterval(pingpong);
-        wsK.close();
-        return;
-      }
-      gotPong = false;
-      wsK.send("PING");
-    }, 10000);
+    // var gotPong = true;
+    // pingpong = setInterval(() => {
+    //   if (!gotPong) {
+    //     console.log("keyboard: didn't get PONG! Terminating connection...");
+    //     clearInterval(pingpong);
+    //     wsK.close();
+    //     return;
+    //   }
+    //   gotPong = false;
+    //   wsK.send("PING");
+    // }, 10000);
 
-    wsK.on('message'), (msg) => {
-      console.log('keyboard: got', msg);
-      if (msg == "PONG") {
-        gotPong = true;
-      }
-    }
+    // wsK.on('message'), (msg) => {
+    //   console.log('keyboard: got', msg);
+    //   if (msg == "PONG") {
+    //     gotPong = true;
+    //   }
+    // }
 
     wsK.on('close', (conn) => {
       console.log('ws connection to keyboard terminated');
-      connections[uid].wsKeyboard = null;
-      connections[uid].connected = false;
+      connections[uid].removeKeyboard()
       if (connections[uid].wsClient != null)
-        connections[uid].wsClient.send(statusStr('Status: phone disconnected'));
+        // we cannot signal a non-websocket connection
+        try {
+          connections[uid].wsClient.send(statusStr('Status: phone disconnected'));
+        } catch(err) {
+          console.error(err)
+        }
     });
   }
 });

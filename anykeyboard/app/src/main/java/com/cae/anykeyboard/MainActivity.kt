@@ -66,52 +66,48 @@ class MainActivity : AppCompatActivity() {
 
         // ADD SERVER BUTTON
         val btn1 = findViewById<Button>(R.id.button)
-        btn1.setOnClickListener(object: View.OnClickListener {
-            override fun onClick(v: View?) {
-                val builder = AlertDialog.Builder(window.context)
-                builder.setTitle("Add Server")
-                val viewInflated = LayoutInflater.from(window.context).inflate(R.layout.input_txt_prompt,
-                    findViewById(android.R.id.content), false)
-                val txtInput = viewInflated.findViewById<EditText>(R.id.input_txt_prompt)
-                builder.setView(viewInflated)
+        btn1.setOnClickListener {
+            val builder = AlertDialog.Builder(window.context)
+            builder.setTitle("Add Server")
+            val viewInflated = LayoutInflater.from(window.context).inflate(R.layout.input_txt_prompt,
+                findViewById(android.R.id.content), false)
+            val txtInput = viewInflated.findViewById<EditText>(R.id.input_txt_prompt)
+            builder.setView(viewInflated)
 
-                // buttons
-                builder.setPositiveButton(android.R.string.ok, object: DialogInterface.OnClickListener {
-                    override fun onClick(dialog: DialogInterface?, which: Int) {
-                        dialog?.dismiss()
-                        val txt = txtInput.text.toString()
-                        if (txt !in srvList && txt.isNotEmpty()) {
-                            srvList.add(txt)
-                            srvListAdapter.notifyDataSetChanged()
-                            spinner.setSelection(srvList.indexOf(txt))
-                            val prefEdit = prefs.edit()
-                            prefEdit.putString("servers", gson.toJson(srvList))
-                            prefEdit.apply()
-                        }
+            // buttons
+            builder.setPositiveButton(android.R.string.ok, object: DialogInterface.OnClickListener {
+                override fun onClick(dialog: DialogInterface?, which: Int) {
+                    dialog?.dismiss()
+                    val txt = txtInput.text.toString()
+                    if (txt !in srvList && txt.isNotEmpty()) {
+                        srvList.add(txt)
+                        srvListAdapter.notifyDataSetChanged()
+                        spinner.setSelection(srvList.indexOf(txt))
+                        val prefEdit = prefs.edit()
+                        prefEdit.putString("servers", gson.toJson(srvList))
+                        prefEdit.apply()
                     }
-                })
-                builder.setNegativeButton(android.R.string.cancel, object: DialogInterface.OnClickListener {
-                    override fun onClick(dialog: DialogInterface?, which: Int) {
-                        dialog?.cancel()
-                    }
-                })
-                builder.show()
-            }
-        })
+                }
+            })
+            builder.setNegativeButton(android.R.string.cancel, object: DialogInterface.OnClickListener {
+                override fun onClick(dialog: DialogInterface?, which: Int) {
+                    dialog?.cancel()
+                }
+            })
+            builder.show()
+        }
 
         // REMOVE SERVER BUTTON
         val btn2 = findViewById<Button>(R.id.button2)
-        btn2.setOnClickListener(object: View.OnClickListener {
-            override fun onClick(v: View?) {
-                if (spinner.selectedItem.toString() != DEFAULT_SERVER_URL) {
-                    srvList.remove(spinner.selectedItem)
-                    srvListAdapter.notifyDataSetChanged()
-                    val prefEdit = prefs.edit()
-                    prefEdit.putString("servers", gson.toJson(srvList))
-                    prefEdit.apply()
-                }
+        btn2.setOnClickListener {
+            if (spinner.selectedItem.toString() != DEFAULT_SERVER_URL) {
+                srvList.remove(spinner.selectedItem)
+                srvListAdapter.notifyDataSetChanged()
+                val prefEdit = prefs.edit()
+                prefEdit.putString("servers", gson.toJson(srvList))
+                prefEdit.apply()
             }
-        })
+        }
     }
 
     override fun onResume() {

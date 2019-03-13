@@ -9,6 +9,7 @@ import android.support.v4.content.LocalBroadcastManager
 import android.util.Log
 import android.view.*
 import android.support.v7.widget.Toolbar
+import android.widget.Button
 import okhttp3.*
 import java.io.IOException
 import java.lang.Exception
@@ -23,7 +24,7 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
     }
 
     // connection
-    private val client = OkHttpClient()
+    private var client: OkHttpClient? = null
     private var ws: okhttp3.WebSocket? = null
     private var uid: String? = null
     private var secret = ""
@@ -31,6 +32,14 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
 
     // keyboard
     private val keymap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD)
+    private var cViewTbar: Toolbar? = null
+    private lateinit var cView: View
+    private var initialCview = true
+
+    enum class ToolbarType {
+        NORMAL, RETRY
+    }
+    private var tbType = ToolbarType.NORMAL
 
 
     // local broadcast
@@ -38,7 +47,10 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
     private var listener = object: BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
-                GIVE_SECRET -> getUID(intent.getStringExtra("SECRET"))
+                GIVE_SECRET -> {
+                    secret = intent.getStringExtra("SECRET")
+                    getUID()
+                }
             }
             Log.e("BroadCastReceiver", "got '$intent'")
         }
@@ -50,17 +62,20 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
 
 
     override fun onCreateInputView(): View {
+        client = OkHttpClient()
         handler = Handler()
         prefs = getSharedPreferences("anykeyboard_shared", Context.MODE_PRIVATE)
         return getSecretKeyboard()
     }
 
     override fun onCreateCandidatesView(): View {
-        // meh
-        val cview = layoutInflater.inflate(R.layout.keyboard_info, null)
-        val tbar = cview.findViewById(R.id.le_toolbar) as Toolbar
-        tbar.title = "Input the secret:"
-        return cview
+        cView = layoutInflater.inflate(R.layout.keyboard_info, null)
+        cViewTbar = cView.findViewById(R.id.le_toolbar)
+        if (initialCview) {
+            cViewTbar?.title = getString(R.string.input_secret)
+            initialCview = false
+        }
+        return cView
     }
 
     override fun onDestroy() {
@@ -77,10 +92,11 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
         val code = primaryCode.toChar()
         secret += code
         if (secret.length == SECRET_LENGTH) {
-            getUID(secret)
+            getUID()
             // load empty keyboard
             setInputView(getEmptyKeyboard())
         }
+        cViewTbar?.title = getString(R.string.input_secret) + " " + secret
     }
 
     override fun onPress(primaryCode: Int) {}
@@ -97,6 +113,51 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
 
     override fun swipeUp() {}
 
+    private fun tryConnection() {
+        if (uid != null) {
+            createWebSocket()
+        } else if (secret.length == SECRET_LENGTH) {
+            getUID()
+        } else {
+            setInputView(getSecretKeyboard())
+            setStatus(getString(R.string.retry))
+        }
+    }
+
+    private fun setToolbar(type: ToolbarType) {
+        if (tbType == type)
+            return
+
+        cViewTbar?.removeAllViews()
+        Log.i("setToolbar", "removed views")
+        when (type) {
+            ToolbarType.NORMAL -> {
+
+            }
+            ToolbarType.RETRY -> {
+                val b = Button(cView.context)
+                val lp = Toolbar.LayoutParams(
+                    Toolbar.LayoutParams.WRAP_CONTENT, Toolbar.LayoutParams.MATCH_PARENT)
+                lp.gravity = Gravity.END
+                b.layoutParams = lp
+                b.setText(R.string.btn_retry)
+                b.setOnClickListener {
+                    setInputView(getSecretKeyboard())
+                    setStatus(getString(R.string.input_secret))
+                }
+                cViewTbar?.addView(b)
+            }
+        }
+
+        tbType = type
+    }
+
+    private fun setStatus(text: String, toolbarType: ToolbarType = ToolbarType.NORMAL) {
+        setToolbar(toolbarType)
+        cViewTbar?.title = text
+        setCandidatesViewShown(true)
+    }
+
     private fun getSecretKeyboard() : KeyboardView {
         secret = ""
         val keyboardSecretView = layoutInflater.inflate(R.layout.keyboard_view_secret,
@@ -104,7 +165,6 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
         val keyboard = Keyboard(this, R.xml.keyboard_layout_secret)
         keyboardSecretView.keyboard = keyboard
         keyboardSecretView.setOnKeyboardActionListener(this)
-
         setCandidatesViewShown(true)
 
         return keyboardSecretView
@@ -114,7 +174,7 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
         val keyboardView = layoutInflater.inflate(R.layout.keyboard_view, null) as KeyboardView
         val keyboard = Keyboard(this, R.xml.keyboard_layout)
         keyboardView.keyboard = keyboard
-        setCandidatesViewShown(false)
+        //setCandidatesViewShown(false)
         return keyboardView
     }
 
@@ -122,7 +182,7 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
         handler?.post(runnable)
     }
 
-    private fun getUID(secret: String) {
+    private fun getUID() {
         val url = prefs?.getString("url", "")
         val requestBody = FormBody.Builder()
             .add("secret", secret)
@@ -133,10 +193,13 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
             .build()
 
         try {
-            client.newCall(request)
-                .enqueue(object : Callback {
+            client?.newCall(request)
+                ?.enqueue(object : Callback {
                     override fun onFailure(call: Call, e: IOException) {
-                        Log.e("createWebSocket", "Failed request")
+                        runOnMainThread(Runnable {
+                            setStatus(getString(R.string.conn_failed), ToolbarType.RETRY)
+                        })
+                        Log.e("createWebSocket", "Failed request: $e")
                     }
 
                     override fun onResponse(call: Call, response: Response) {
@@ -144,10 +207,9 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
                         if (uid == null || uid?.length == 0) {
                             Log.e("getUID", "Got: '$uid'")
                             Log.e("getUID", "Failed to get UID, wrong secret?")
-                            runOnMainThread(object: Runnable {
-                                override fun run() {
-                                    setInputView(getSecretKeyboard())
-                                }
+                            runOnMainThread(Runnable {
+                                setInputView(getSecretKeyboard())
+                                setStatus(getString(R.string.retry))
                             })
                         } else {
                             Log.i("getUID", "Retrieved UID: $uid")
@@ -169,10 +231,11 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
                 .addHeader("uid", uid.toString())
                 .build()
             val wsListener = WSclient()
-            ws = client.newWebSocket(request, wsListener)
-            client.dispatcher().executorService().shutdown()
+            ws = client?.newWebSocket(request, wsListener)
+//            client?.dispatcher()?.executorService()?.shutdown()
         } else {
-            Log.i("createWebSocket", "Server has not replied with an user ID!")
+            setStatus(getString(R.string.conn_issue))
+            Log.e("createWebSocket", "Server has not replied with an user ID!")
         }
     }
 
@@ -250,10 +313,17 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
         } catch (e: Exception) {
             Log.e("anykeyboard", "Error trying to handle input", e)
         }
-
     }
 
     inner class WSclient : WebSocketListener() {
+
+        override fun onOpen(webSocket: WebSocket, response: Response) {
+            super.onOpen(webSocket, response)
+            runOnMainThread(Runnable {
+                setStatus(getString(R.string.connected))
+            })
+            Log.i("ws:onOpen", "connected!")
+        }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
             super.onMessage(webSocket, text)
@@ -271,12 +341,19 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
             super.onClosing(webSocket, code, reason)
             webSocket.close(wsNormalClosingStatus, null)
-            Log.i("ws:onClosing", "Closing: $code | $reason")
+            runOnMainThread(Runnable {
+                setStatus(getString(R.string.disconnected), ToolbarType.RETRY)
+            })
+//            Log.i("ws:onClosing", "Closing: $code | $reason")
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             super.onFailure(webSocket, t, response)
-            Log.e("ws:onFailure", t.message)
+            runOnMainThread(Runnable {
+                setStatus(getString(R.string.conn_issue), ToolbarType.RETRY)
+                webSocket.cancel()
+            })
+            Log.e("ws:onFailure", "Failure: " + t.message.toString())
         }
     }
 

@@ -1,3 +1,19 @@
 <resources>
     <string name="app_name">anykeyboard</string>
+
+    <string name="main_status">Installed!</string>
+    <!--OPTIONS - MAIN-->
+    <string name="options">Options</string>
+    <string name="options_server">Server</string>
+    <string name="options_server_hint">IP:port</string>
+
+    <!--CONNECTION STATUS-->
+    <string name="input_secret">Input the secret:</string>
+    <string name="retry">Try again!</string>
+    <string name="btn_retry">Retry</string>
+    <string name="connected">anykeyboard: connected</string>
+    <string name="disconnected">anykeyboard: disconnected</string>
+    <string name="conn_issue">Connection issue!</string>
+    <string name="conn_failed">Cannot reach host!</string>
+
 </resources>

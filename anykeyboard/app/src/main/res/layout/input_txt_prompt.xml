@@ -13,7 +13,7 @@
                 android:id="@+id/input_txt_prompt"
                 android:layout_width="match_parent"
                 android:layout_height="74dp"
-                android:hint="IP:port"
+                android:hint="@string/options_server_hint"
                 android:imeOptions="actionDone"
                 android:inputType="text"/>
 
