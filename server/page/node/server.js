@@ -6,9 +6,8 @@ const redis = require('redis');
 const fs = require('fs');
 const enableWs = require('express-ws')
 const crypto = require('crypto')
-
-// const https = require('https');
-// const helmet = require('helmet');
+const https = require('https');
+const helmet = require('helmet');
 
 const app = express();
 enableWs(app);
@@ -24,11 +23,14 @@ rclient.on('error', (err) => {
 });
 
 // certs
-// const credentials = {
-//   key: fs.readFileSync('/certs/live/pep8format.com/privkey.pem', 'utf8'),
-//   ca: fs.readFileSync('/certs/live/pep8format.com/chain.pem', 'utf8'),
-//   cert: fs.readFileSync('/certs/live/pep8format.com/cert.pem', 'utf8')
-// };
+var credentials = {}
+if (app.settings.env == 'production') {
+  credentials = {
+    key: fs.readFileSync('/certs/live/anykeyboard.com/privkey.pem', 'utf8'),
+    ca: fs.readFileSync('/certs/live/anykeyboard.com/chain.pem', 'utf8'),
+    cert: fs.readFileSync('/certs/live/anykeyboard.com/cert.pem', 'utf8')
+  };
+}
 
 // static files
 const staticfileoptions = {
@@ -83,7 +85,9 @@ const checkUIDcookie = async (req, res, next) => {
 }
 
 
-// app.use(helmet());
+if (app.settings.env == 'production') {
+  app.use(helmet());
+}
 app.use(cookieParser());
 // custom cookie middleware
 app.use('/user/id', checkUIDcookie);
@@ -265,6 +269,8 @@ app.use((req, res, next) => {
 server = app.listen(9080, () => {
   console.log('HTTP listening on port 9080...')
 });
-// https.createServer(credentials, app).listen(9443, () => {
-//   console.log('HTTPS listening on port 9443...');
-// });
+if (app.settings.env == 'production') {
+  https.createServer(credentials, app).listen(9443, () => {
+    console.log('HTTPS listening on port 9443...');
+  });
+}
