@@ -10,7 +10,21 @@ const https = require('https');
 const helmet = require('helmet');
 
 const app = express();
-enableWs(app);
+
+var httpsserver = undefined
+var credentials = {}
+if (app.settings.env == 'production') {
+  credentials = {
+    key: fs.readFileSync('/certs/live/anykeyboard.com/privkey.pem', 'utf8'),
+    ca: fs.readFileSync('/certs/live/anykeyboard.com/chain.pem', 'utf8'),
+    cert: fs.readFileSync('/certs/live/anykeyboard.com/cert.pem', 'utf8')
+  };
+  httpsserver = https.createServer(credentials, app)
+  enableWs(app, httpsserver);
+} else {
+  enableWs(app);
+}
+
 console.log("app mode:", app.settings.env)
 const rclient = redis.createClient({host: app.settings.env == 'production' ? 'redis' : 'localhost',
                                     port: 6379});
@@ -21,16 +35,6 @@ rclient.on('connect', () => {
 rclient.on('error', (err) => {
   console.log('Error connecting to redis: ' + err);
 });
-
-// certs
-var credentials = {}
-if (app.settings.env == 'production') {
-  credentials = {
-    key: fs.readFileSync('/certs/live/anykeyboard.com/privkey.pem', 'utf8'),
-    ca: fs.readFileSync('/certs/live/anykeyboard.com/chain.pem', 'utf8'),
-    cert: fs.readFileSync('/certs/live/anykeyboard.com/cert.pem', 'utf8')
-  };
-}
 
 // static files
 const staticfileoptions = {
@@ -201,7 +205,6 @@ app.post('/rclient', (req, res) => {
 
 
 /** KEYBOARD CONNECTION (always websocket) **/
-// TODO: send POST request to get user ID (if secret is correct!)
 
 app.post('/registerkb', (req, res) => {
   console.log('trying to register keyboard; conns:', danglingConnections.length);
@@ -270,7 +273,7 @@ server = app.listen(9080, () => {
   console.log('HTTP listening on port 9080...')
 });
 if (app.settings.env == 'production') {
-  https.createServer(credentials, app).listen(9443, () => {
+  httpsserver.listen(9443, () => {
     console.log('HTTPS listening on port 9443...');
   });
 }

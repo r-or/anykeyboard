@@ -54,7 +54,8 @@
         }
       }
 
-      const socket = new WebSocket('ws://' + url);
+      var proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const socket = new WebSocket(proto + '//' + url);
       socket.addEventListener('open', function (event) {
         // send secret
         socket.send('YO!');
