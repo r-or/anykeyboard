@@ -10,9 +10,10 @@ const https = require('https');
 const helmet = require('helmet');
 
 const app = express();
+console.log("app mode:", app.settings.env);
 
-var httpsserver = undefined
-var credentials = {}
+// HTTPS
+var httpsserver = undefined;
 if (app.settings.env == 'production') {
   credentials = {
     key: fs.readFileSync('/certs/live/anykeyboard.com/privkey.pem', 'utf8'),
@@ -25,9 +26,10 @@ if (app.settings.env == 'production') {
   enableWs(app);
 }
 
-console.log("app mode:", app.settings.env)
-const rclient = redis.createClient({host: app.settings.env == 'production' ? 'redis' : 'localhost',
-                                    port: 6379});
+// Redis
+const rclient = redis.createClient(
+  {host: app.settings.env == 'production' ? 'redis' : 'localhost',
+   port: 6379});
 rclient.on('connect', () => {
   console.log('Connected to redis!');
   rclient.set('request-counter', 0);
@@ -67,6 +69,7 @@ function genUser(res) {
   });
 }
 
+// custom cookie middleware
 const checkUIDcookie = async (req, res, next) => {
   var cookie = req.cookies.anykeyboardUsr;
   if (cookie === undefined) {
@@ -88,12 +91,19 @@ const checkUIDcookie = async (req, res, next) => {
   }
 }
 
-
+// middlewares
 if (app.settings.env == 'production') {
+  // redirect request to https
+  app.use((req, res, next) => {
+    if (!req.secure) {
+      return res.redirect(['https://', req.get('Host'), req.url].join(''));
+    }
+    next();
+  });
+
   app.use(helmet());
 }
 app.use(cookieParser());
-// custom cookie middleware
 app.use('/user/id', checkUIDcookie);
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json({limit: '5mb'}));
@@ -118,11 +128,9 @@ app.get('/user/id', (req, res) => {
   res.end();
 });
 
-
 const genSecret = () => {
   return Math.floor(Math.random() * (10000 - 1000) + 1000);
 }
-
 
 // keys: uid; values: ConnectionInfo
 var connections = {};
@@ -205,7 +213,6 @@ app.post('/rclient', (req, res) => {
 
 
 /** KEYBOARD CONNECTION (always websocket) **/
-
 app.post('/registerkb', (req, res) => {
   console.log('trying to register keyboard; conns:', danglingConnections.length);
   var secret = parseInt(req.body.secret)
@@ -265,6 +272,7 @@ app.ws('/kb', (wsK, req) => {
   }
 });
 
+// default router
 app.use((req, res, next) => {
   res.status(404).end();
 })
