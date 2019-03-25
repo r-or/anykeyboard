@@ -184,11 +184,13 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
 
     private fun getUID() {
         val url = prefs?.getString("url", "")
+        val dbg = prefs?.getBoolean("debug", false)
+        val proto = if (dbg != null && dbg == true) "http" else "https"
         val requestBody = FormBody.Builder()
             .add("secret", secret)
             .build()
         val request = Request.Builder()
-            .url("http://$url/registerkb")
+            .url("$proto://$url/registerkb")
             .post(requestBody)
             .build()
 
@@ -225,11 +227,11 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
     private fun createWebSocket() {
         val url = prefs?.getString("url", "")
         val dbg = prefs?.getBoolean("debug", false)
-        val proto = if (dbg != null && dbg == true) "ws:" else "wss:"
+        val proto = if (dbg != null && dbg == true) "ws" else "wss"
         // get user ID
         if (uid != null) {
             val request = Request.Builder()
-                .url("$proto//$url/kb")
+                .url("$proto://$url/kb")
                 .addHeader("uid", uid.toString())
                 .build()
             val wsListener = WSclient()
