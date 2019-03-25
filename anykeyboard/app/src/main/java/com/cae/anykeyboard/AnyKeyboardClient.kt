@@ -224,10 +224,12 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
 
     private fun createWebSocket() {
         val url = prefs?.getString("url", "")
+        val dbg = prefs?.getBoolean("debug", false)
+        val proto = if (dbg != null && dbg == true) "ws:" else "wss:"
         // get user ID
         if (uid != null) {
             val request = Request.Builder()
-                .url("ws://$url/kb")
+                .url("$proto//$url/kb")
                 .addHeader("uid", uid.toString())
                 .build()
             val wsListener = WSclient()
@@ -240,6 +242,7 @@ class AnyKeyboardClient : InputMethodService(), KeyboardView.OnKeyboardActionLis
     }
 
     private fun handleSocketInput(text: String) {
+        setCandidatesViewShown(false)
         try {
             if (text.length > 1) {
                 val now = System.currentTimeMillis()

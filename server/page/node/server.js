@@ -12,7 +12,6 @@ const helmet = require('helmet');
 const app = express();
 
 var httpsserver = undefined
-var credentials = {}
 if (app.settings.env == 'production') {
   credentials = {
     key: fs.readFileSync('/certs/live/anykeyboard.com/privkey.pem', 'utf8'),

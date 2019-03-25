@@ -6,6 +6,7 @@
     <string name="options">Options</string>
     <string name="options_server">Server</string>
     <string name="options_server_hint">IP:port</string>
+    <string name="debug">Debugging (use insecure connection)</string>
 
     <!--CONNECTION STATUS-->
     <string name="input_secret">Input the secret:</string>

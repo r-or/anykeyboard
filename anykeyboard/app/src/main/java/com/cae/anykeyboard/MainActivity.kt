@@ -108,6 +108,17 @@ class MainActivity : AppCompatActivity() {
                 prefEdit.apply()
             }
         }
+
+        // DEBUG BUTTON
+        val dbgSwitch = findViewById<Switch>(R.id.switch_debug)
+        dbgSwitch.setOnCheckedChangeListener(object: CompoundButton.OnCheckedChangeListener {
+            override fun onCheckedChanged(buttonView: CompoundButton?, isChecked: Boolean) {
+                val prefEdit = prefs.edit()
+                prefEdit.putBoolean("debug", isChecked)
+                prefEdit.apply()
+            }
+        })
+        dbgSwitch.isChecked = prefs.getBoolean("debug", false)
     }
 
     override fun onResume() {
