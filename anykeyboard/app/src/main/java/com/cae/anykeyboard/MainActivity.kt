@@ -1,6 +1,7 @@
 package com.cae.anykeyboard
 
 import android.content.*
+import android.content.pm.ApplicationInfo
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v4.content.LocalBroadcastManager
@@ -109,6 +110,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        val isDbgBuild = applicationInfo.flags != 0 and ApplicationInfo.FLAG_DEBUGGABLE
         // DEBUG BUTTON
         val dbgSwitch = findViewById<Switch>(R.id.switch_debug)
         dbgSwitch.setOnCheckedChangeListener(object: CompoundButton.OnCheckedChangeListener {
@@ -118,7 +120,8 @@ class MainActivity : AppCompatActivity() {
                 prefEdit.apply()
             }
         })
-        dbgSwitch.isChecked = prefs.getBoolean("debug", false)
+        dbgSwitch.isChecked = isDbgBuild and prefs.getBoolean("debug", false)
+        dbgSwitch.isEnabled = isDbgBuild
     }
 
     override fun onResume() {
