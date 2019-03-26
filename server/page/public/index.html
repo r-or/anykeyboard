@@ -61,6 +61,7 @@
         }
       }
 
+      var secretPg = document.getElementById('secret');
       var proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
       const socket = new WebSocket(proto + '//' + url);
       socket.addEventListener('open', function (event) {
@@ -69,13 +70,19 @@
       });
       socket.addEventListener('error', function (event) {
         console.log('Error:', event)
+        // switch to REST
+        websocketBtn.className = "buttonN";
+        websocketBtn.usewebsocket = false;
+        websocketBtn.innerText = "REST";
+        postData('/rclient', {})
+        .then(data => {secretPg.innerHTML = data.status})
+        .catch(err => console.error(err));
       });
       socket.addEventListener('message', function (event) {
-        data = JSON.parse(event.data)
-        console.log('websocket: got', data)
-        var secretPg = document.getElementById('secret');
+        data = JSON.parse(event.data);
+        console.log('websocket: got', data);
         if (data.status != undefined) {
-          secretPg.innerHTML = data.status
+          secretPg.innerHTML = data.status;
         }
       });
 
@@ -88,7 +95,11 @@
           socket.send(tosend);
         } else {
           postData('/rclient', {key: tosend})
-            .catch(err => console.error(err));
+          .then(data => {
+            console.log('REST: got', data);
+            secretPg.innerHTML = data.status;
+          })
+          .catch(err => console.error(err));
         }
         txtinput.value = keyevent.key;
       });
