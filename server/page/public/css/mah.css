@@ -38,6 +38,18 @@ textarea {
   box-sizing: border-box;
 }
 
+.coolp {
+  color: var(--main-header-col);
+  text-align: center;
+  font-size: 5.0em;
+  transition: opacity ease;
+  transition-duration: 5s;
+  /* transition-delay: 0.5s; */
+  -webkit-transition: opacity ease;
+  -webkit-transition-duration: 5s;
+  /* -webkit-transition-delay: 0.5s; */
+}
+
 .button-grp .button {
   font-family: var(--main-fnt);
   background-color: var(--main-fnt-col);

@@ -36,8 +36,8 @@
   <p><i><u>Secret:</u> when you select "anykeyboard" as keyboard you will be asked to input this
     number to match you up with your phone</i>
   </p>
-  <p>Input here:</p>
-  <textarea id="inp" rows=5 cols=10 autofocus></textarea>
+  <p>[just start typing here]</p>
+  <p class="coolp" id="coolinp"></p>
 
   <!-- main -->
   <script>
@@ -86,8 +86,10 @@
         }
       });
 
-      const txtinput = document.getElementById('inp');
-      txtinput.addEventListener('keydown', function (keyevent) {
+      const inputvis = document.getElementById('coolinp');
+      var lastkey = "";
+      var identicalCnt = 1;
+      document.addEventListener('keydown', function (keyevent) {
         keyevent.preventDefault();
         var tosend = keyevent.key.length > 1 ? 'D|' + keyevent.key : keyevent.key;
         console.log('sending "' + tosend + '"')
@@ -101,9 +103,20 @@
           })
           .catch(err => console.error(err));
         }
-        txtinput.value = keyevent.key;
+        // set input visualisation keydown
+        if (keyevent.key == lastkey) {
+          ++identicalCnt;
+        } else {
+          identicalCnt = 1;
+        }
+        inputvis.innerText = "'" + keyevent.key + "' \u2193"
+          + (identicalCnt > 1 ? " x" + identicalCnt.toString() : "");
+        inputvis.style.transitionDuration = '0s';
+        inputvis.style.webkitTransitionDuration = '0s';
+        inputvis.style.opacity = '1';
+        lastkey = keyevent.key;
       });
-      txtinput.addEventListener('keyup', function (keyevent) {
+      document.addEventListener('keyup', function (keyevent) {
         keyevent.preventDefault();
         if (keyevent.key.length > 1) {
           var tosend = 'U|' + keyevent.key;
@@ -115,6 +128,13 @@
               .catch(err => console.error(err));
           }
         }
+        // set input visualisation keyup
+        inputvis.innerText = "'" + keyevent.key + "' \u2191"
+          + (identicalCnt > 1 ? " x" + identicalCnt.toString() : "");
+        inputvis.style.transitionDuration = '5s';
+        inputvis.style.webkitTransitionDuration = '5s';
+        inputvis.style.opacity = '0';
+        identicalCnt = 0;
       });
     })
   .catch(error => console.log(error))
